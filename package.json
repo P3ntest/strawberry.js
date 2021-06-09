@@ -1,0 +1,30 @@
+{
+  "name": "strawberry.js",
+  "version": "1.0.0",
+  "description": "discord.js wrapper for super fast and clean bot creation",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/P3ntest/strawberry.js.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/P3ntest/strawberry.js/issues"
+  },
+  "homepage": "https://github.com/P3ntest/strawberry.js#readme",
+  "dependencies": {
+    "discord.js": "^12.5.3",
+    "yaml": "^1.10.2"
+  },
+  "devDependencies": {
+    "@types/node": "^15.12.2",
+    "typescript": "^4.3.2"
+  }
+}
