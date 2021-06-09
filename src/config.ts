@@ -1,6 +1,7 @@
 import { MessageAttachment } from "discord.js";
-import { Collection, Pair, Schema } from "yaml/types";
-import { Type } from "yaml/util";
+import { Document } from "yaml";
+import { Collection, Node, Pair, Schema } from "yaml/types";
+const YAML = require("yaml");
 
 export class ConfigurationManager {
     schema: ConfigSchema;
@@ -52,27 +53,54 @@ class EndType {
     constructor(type: Types) {
         this.type = type;
     }
+    defaultValue(list = false) {
+        if (list) {
+            return [""];
+        }
+        return "";
+    }
 }
 
-export function generateBlankYaml(schema: ConfigSchema): Collection {
-    const col = new Collection();
+export function generateBlankYaml(schema: ConfigSchema): string {
+    const nodes = schemaToYamlCollection(schema);
+
+    return (YAML.stringify(nodes));
+}
+
+// TODO: make this code nice
+function schemaToYamlCollection(schema: ConfigSchema): Node[] {
+    const nodes: Node[] = [];
     
     for (const key in schema) {
         const data: ConfigSchema | ConfigType = schema[key];
 
         const method: TypeMethod = getTypeMethod(data);
 
-        if (method == TypeMethod.Category) {
-            col.add(generateBlankYaml(data as ConfigSchema));
-        } else if (method == List) {
+        const node = YAML.createNode({});
+        
 
+        if (method == TypeMethod.Category) {
+            const subNode = YAML.createNode({});
+            schemaToYamlCollection(data as ConfigSchema).forEach(_subNode => {
+                subNode.items.push((_subNode as any).items[0]);
+            })
+            node.add(new Pair(key, subNode));
+            
+        } else if (method == TypeMethod.List) {
+            node.add(new Pair(key, (data as TypeList).type.defaultValue(true)));
         } else {
-            col.add(new Pair(key, (data as EndType).type));
+            if (data instanceof EndType) {
+                node.add(new Pair(key, (data as EndType).defaultValue()));
+            } else {
+                node.add(new Pair(key, (data.type as EndType).defaultValue()));
+                node.commentBefore = (data as any).description;
+            }
         }
+
+        nodes.push(node);
     }
 
-    return col;
-    
+    return nodes;
 }
 
 enum TypeMethod {
