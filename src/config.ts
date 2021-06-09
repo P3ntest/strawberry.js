@@ -1,4 +1,6 @@
-import { Collection } from "yaml/types";
+import { MessageAttachment } from "discord.js";
+import { Collection, Pair, Schema } from "yaml/types";
+import { Type } from "yaml/util";
 
 export class ConfigurationManager {
     schema: ConfigSchema;
@@ -9,12 +11,22 @@ export class ConfigurationManager {
 }
 
 export interface ConfigSchema {
-    [index: number]: ConfigSchema | ConfigType;
-  }
+    [index: string]: ConfigSchema | ConfigType;
+}
 
-export type ConfigType = Types | {type: ConfigType, description?: string, category?: string, required?: boolean} | TypeList;
 
-export enum Types {
+export type ConfigType = EndType | {type: ConfigType, description?: string, category?: string, required?: boolean} | TypeList;
+
+export function Number(): EndType {
+    return new EndType(Types.Number);
+}
+
+export function Text(): EndType {
+    return new EndType(Types.Text);
+}
+
+
+enum Types {
     Token,
     BotToken,
     Text,
@@ -23,17 +35,60 @@ export enum Types {
 
 
 
-export function List(type: ConfigType): TypeList {
+
+export function List(type: EndType): TypeList {
     return new TypeList(type);
 }
 
 class TypeList {
-    type: ConfigType;
-    constructor(type: ConfigType) {
+    type: EndType;
+    constructor(type: EndType) {
         this.type = type;
     }
 }
 
-function generateBlankYaml(schema: ConfigSchema) {
+class EndType {
+    type: Types;
+    constructor(type: Types) {
+        this.type = type;
+    }
+}
+
+export function generateBlankYaml(schema: ConfigSchema): Collection {
+    const col = new Collection();
     
+    for (const key in schema) {
+        const data: ConfigSchema | ConfigType = schema[key];
+
+        const method: TypeMethod = getTypeMethod(data);
+
+        if (method == TypeMethod.Category) {
+            col.add(generateBlankYaml(data as ConfigSchema));
+        } else if (method == List) {
+
+        } else {
+            col.add(new Pair(key, (data as EndType).type));
+        }
+    }
+
+    return col;
+    
+}
+
+enum TypeMethod {
+    List,
+    EndType,
+    Category
+}
+
+function getTypeMethod(object: ConfigType | ConfigSchema): TypeMethod {
+    if (object instanceof TypeList || object.type instanceof TypeList) {
+        return TypeMethod.List;
+    }
+
+    if (object instanceof EndType || object.type instanceof EndType) {
+        return TypeMethod.EndType;
+    }
+
+    return TypeMethod.Category;
 }
